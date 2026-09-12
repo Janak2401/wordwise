@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/providers/theme_provider.dart';
 import '../../../data/datasources/stats_store.dart';
 import '../providers/game_provider.dart';
 import '../widgets/game_grid.dart';
@@ -23,7 +24,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   void _checkGameStatus(GameState state) {
     if (state.status != GameStatus.playing && !_modalShown) {
       _modalShown = true;
-      Future.delayed(const Duration(milliseconds: 700), () {
+      Future.delayed(const Duration(milliseconds: 1800), () {
         if (!mounted) return;
         showModalBottomSheet(
           context: context,
@@ -41,6 +42,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
     final streak = StatsStore.currentStreak;
+    final isDark = ref.watch(themeProvider);
+
+    final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
+    final borderColor = isDark ? AppColors.border : AppColors.lightBorder;
+    final surfaceColor = isDark ? AppColors.surface : AppColors.lightSurface;
+    final bgColor = isDark ? AppColors.background : AppColors.lightBackground;
 
     ref.listen<GameState>(gameProvider, (previous, next) {
       _checkGameStatus(next);
@@ -49,17 +57,17 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     final currentGuessCount = gameState.submittedRows.length + (gameState.currentInput.isNotEmpty ? 1 : 0);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: bgColor,
         elevation: 0,
         centerTitle: true,
         title: Text(
           'W O R D W I S E',
-          style: AppTypography.title,
+          style: AppTypography.title.copyWith(color: textPrimary),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.help_outline_rounded, color: AppColors.textSecondary),
+          icon: Icon(Icons.help_outline_rounded, color: textSecondary),
           onPressed: () => context.push('/how-to-play'),
         ),
         actions: [
@@ -67,11 +75,11 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           PopupMenuButton<int>(
             tooltip: 'Word Length',
             initialValue: gameState.wordLength,
-            color: AppColors.surface,
+            color: surfaceColor,
             icon: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: borderColor),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -89,31 +97,40 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 5, child: Text('5 Letters (6 Guesses)')),
-              const PopupMenuItem(value: 6, child: Text('6 Letters (7 Guesses)')),
-              const PopupMenuItem(value: 7, child: Text('7 Letters (8 Guesses)')),
+              PopupMenuItem(value: 5, child: Text('5 Letters (6 Guesses)', style: TextStyle(color: textPrimary))),
+              PopupMenuItem(value: 6, child: Text('6 Letters (7 Guesses)', style: TextStyle(color: textPrimary))),
+              PopupMenuItem(value: 7, child: Text('7 Letters (8 Guesses)', style: TextStyle(color: textPrimary))),
             ],
           ),
           // Streak Counter
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Row(
               children: [
                 const Text('🔥', style: TextStyle(fontSize: 16)),
                 const SizedBox(width: 2),
                 Text(
                   '$streak',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
+                    color: textSecondary,
                   ),
                 ),
               ],
             ),
           ),
+          // Theme Toggle
+          IconButton(
+            tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+            icon: Icon(
+              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+              color: textSecondary,
+            ),
+            onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
+          ),
           // Settings
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppColors.textSecondary),
+            icon: Icon(Icons.settings_outlined, color: textSecondary),
             onPressed: () => context.push('/settings'),
           ),
         ],
@@ -121,7 +138,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const Divider(color: AppColors.border, height: 1),
+            Divider(color: borderColor, height: 1),
 
             // Definition Clue Hint
             DefinitionHint(
@@ -135,13 +152,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                 margin: const EdgeInsets.symmetric(vertical: 4),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.textPrimary,
+                  color: textPrimary,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   gameState.message!,
-                  style: const TextStyle(
-                    color: AppColors.background,
+                  style: TextStyle(
+                    color: bgColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -169,7 +186,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               padding: const EdgeInsets.only(bottom: 6.0),
               child: Text(
                 'Guess $currentGuessCount of ${gameState.maxGuesses}',
-                style: AppTypography.bodySecondary.copyWith(fontSize: 12),
+                style: AppTypography.bodySecondary.copyWith(fontSize: 12, color: textSecondary),
               ),
             ),
 
@@ -184,9 +201,9 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: surfaceColor,
         selectedItemColor: AppColors.correct,
-        unselectedItemColor: AppColors.textSecondary,
+        unselectedItemColor: textSecondary,
         currentIndex: 0,
         onTap: (index) {
           if (index == 1) context.push('/word-bank');

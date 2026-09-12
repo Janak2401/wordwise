@@ -22,17 +22,25 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
+    final borderColor = isDark ? AppColors.border : AppColors.lightBorder;
+    final surfaceColor = isDark ? AppColors.surface : AppColors.lightSurface;
+    final bgColor = isDark ? AppColors.background : AppColors.lightBackground;
+
     final wordsAsync = ref.watch(bookmarkedWordsProvider);
     final tts = ref.watch(ttsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: bgColor,
         elevation: 0,
+        iconTheme: IconThemeData(color: textSecondary),
         title: Text(
           'WORD BANK',
-          style: AppTypography.title.copyWith(letterSpacing: 2.0),
+          style: AppTypography.title.copyWith(letterSpacing: 2.0, color: textPrimary),
         ),
       ),
       body: Column(
@@ -40,21 +48,21 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search saved vocabulary...',
-                hintStyle: AppTypography.bodySecondary,
-                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
+                hintStyle: AppTypography.bodySecondary.copyWith(color: textSecondary),
+                prefixIcon: Icon(Icons.search, color: textSecondary),
                 filled: true,
-                fillColor: AppColors.surface,
+                fillColor: surfaceColor,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: borderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: borderColor),
                 ),
               ),
               onChanged: (val) {
@@ -67,7 +75,7 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
           Expanded(
             child: wordsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator(color: AppColors.correct)),
-              error: (err, _) => Center(child: Text('Error: $err', style: AppTypography.bodySecondary)),
+              error: (err, _) => Center(child: Text('Error: $err', style: AppTypography.bodySecondary.copyWith(color: textSecondary))),
               data: (words) {
                 final filtered = words.where((bw) {
                   final w = bw.word?.word.toLowerCase() ?? '';
@@ -82,16 +90,16 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.bookmark_border_rounded, size: 64, color: AppColors.borderBright),
+                          Icon(Icons.bookmark_border_rounded, size: 64, color: isDark ? AppColors.borderBright : AppColors.lightBorderBright),
                           const SizedBox(height: 16),
                           Text(
                             _searchQuery.isEmpty ? 'No words bookmarked yet.' : 'No matching words found.',
-                            style: AppTypography.bodyRegular,
+                            style: AppTypography.bodyRegular.copyWith(color: textPrimary),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Complete daily puzzles and save words to build your personal vocabulary deck.',
-                            style: AppTypography.bodySecondary,
+                            style: AppTypography.bodySecondary.copyWith(color: textSecondary),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -112,9 +120,9 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
                     return Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: surfaceColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: borderColor),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,18 +134,18 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
                                 children: [
                                   Text(
                                     word.word,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 1.5,
-                                      color: AppColors.textPrimary,
+                                      color: textPrimary,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   if (word.partOfSpeech != null)
                                     Text(
                                       '(${word.partOfSpeech})',
-                                      style: AppTypography.bodyItalic.copyWith(fontSize: 12),
+                                      style: AppTypography.bodyItalic.copyWith(fontSize: 12, color: textSecondary),
                                     ),
                                 ],
                               ),
@@ -148,7 +156,7 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
                                     onPressed: () => tts.speak(word.word.toLowerCase()),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline_rounded, color: AppColors.textSecondary, size: 22),
+                                    icon: Icon(Icons.delete_outline_rounded, color: textSecondary, size: 22),
                                     onPressed: () async {
                                       final repo = ref.read(dictionaryRepoProvider);
                                       await repo.removeBookmark(word.id);
@@ -162,18 +170,18 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
                           if (word.phonetic != null)
                             Text(
                               word.phonetic!,
-                              style: AppTypography.bodySecondary.copyWith(fontSize: 12),
+                              style: AppTypography.bodySecondary.copyWith(fontSize: 12, color: textSecondary),
                             ),
                           const SizedBox(height: 8),
                           Text(
                             word.definition,
-                            style: AppTypography.bodyRegular.copyWith(fontSize: 14),
+                            style: AppTypography.bodyRegular.copyWith(fontSize: 14, color: textPrimary),
                           ),
                           if (word.example != null && word.example!.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Text(
                               '"${word.example}"',
-                              style: AppTypography.bodyItalic.copyWith(fontSize: 13),
+                              style: AppTypography.bodyItalic.copyWith(fontSize: 13, color: textSecondary),
                             ),
                           ],
                         ],

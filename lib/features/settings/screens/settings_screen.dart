@@ -1,69 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/providers/theme_provider.dart';
 import '../../../data/datasources/settings_store.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _sound = SettingsStore.soundEnabled;
   bool _haptic = SettingsStore.hapticEnabled;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeProvider);
+    final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
+    final borderColor = isDark ? AppColors.border : AppColors.lightBorder;
+    final bgColor = isDark ? AppColors.background : AppColors.lightBackground;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: bgColor,
         elevation: 0,
+        iconTheme: IconThemeData(color: textSecondary),
         title: Text(
           'SETTINGS',
-          style: AppTypography.title.copyWith(letterSpacing: 2.0),
+          style: AppTypography.title.copyWith(letterSpacing: 2.0, color: textPrimary),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
           SwitchListTile(
-            title: const Text('Sound Effects', style: TextStyle(color: AppColors.textPrimary)),
-            subtitle: const Text('Play subtle sounds on actions', style: TextStyle(color: AppColors.textSecondary)),
+            title: Text('Dark Theme', style: TextStyle(color: textPrimary)),
+            subtitle: Text(
+              isDark ? 'Dark mode is on' : 'Light mode is on',
+              style: TextStyle(color: textSecondary),
+            ),
+            value: isDark,
+            activeThumbColor: AppColors.correct,
+            onChanged: (val) {
+              ref.read(themeProvider.notifier).setTheme(val);
+            },
+          ),
+          Divider(color: borderColor),
+          SwitchListTile(
+            title: Text('Sound Effects', style: TextStyle(color: textPrimary)),
+            subtitle: Text('Play subtle sounds on actions', style: TextStyle(color: textSecondary)),
             value: _sound,
-            activeColor: AppColors.correct,
+            activeThumbColor: AppColors.correct,
             onChanged: (val) {
               setState(() => _sound = val);
               SettingsStore.setSoundEnabled(val);
             },
           ),
-          const Divider(color: AppColors.border),
+          Divider(color: borderColor),
           SwitchListTile(
-            title: const Text('Haptic Feedback', style: TextStyle(color: AppColors.textPrimary)),
-            subtitle: const Text('Vibrations on tile submit and key presses', style: TextStyle(color: AppColors.textSecondary)),
+            title: Text('Haptic Feedback', style: TextStyle(color: textPrimary)),
+            subtitle: Text('Vibrations on tile submit and key presses', style: TextStyle(color: textSecondary)),
             value: _haptic,
-            activeColor: AppColors.correct,
+            activeThumbColor: AppColors.correct,
             onChanged: (val) {
               setState(() => _haptic = val);
               SettingsStore.setHapticEnabled(val);
             },
           ),
-          const Divider(color: AppColors.border),
+          Divider(color: borderColor),
           ListTile(
-            title: const Text('How to Play', style: TextStyle(color: AppColors.textPrimary)),
-            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.textSecondary),
+            title: Text('How to Play', style: TextStyle(color: textPrimary)),
+            trailing: Icon(Icons.arrow_forward_ios_rounded, size: 16, color: textSecondary),
             onTap: () => context.push('/how-to-play'),
           ),
-          const Divider(color: AppColors.border),
+          Divider(color: borderColor),
           ListTile(
-            title: const Text('About WordWise', style: TextStyle(color: AppColors.textPrimary)),
-            subtitle: const Text('Version 1.0.0 (Minimal Ink)', style: TextStyle(color: AppColors.textSecondary)),
+            title: Text('About WordWise', style: TextStyle(color: textPrimary)),
+            subtitle: Text('Version 1.1.0 (Minimal Ink)', style: TextStyle(color: textSecondary)),
           ),
         ],
       ),
     );
   }
 }
+

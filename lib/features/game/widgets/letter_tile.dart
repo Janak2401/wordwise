@@ -30,7 +30,7 @@ class _LetterTileState extends State<LetterTile> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -38,7 +38,7 @@ class _LetterTileState extends State<LetterTile> with SingleTickerProviderStateM
     );
 
     if (widget.animateFlip) {
-      Future.delayed(Duration(milliseconds: widget.index * 120), () {
+      Future.delayed(Duration(milliseconds: widget.index * 180), () {
         if (mounted) _controller.forward();
       });
     } else if (widget.evaluation != LetterEvaluation.empty &&
@@ -51,7 +51,7 @@ class _LetterTileState extends State<LetterTile> with SingleTickerProviderStateM
   void didUpdateWidget(LetterTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.animateFlip && !oldWidget.animateFlip) {
-      Future.delayed(Duration(milliseconds: widget.index * 120), () {
+      Future.delayed(Duration(milliseconds: widget.index * 180), () {
         if (mounted) _controller.forward(from: 0.0);
       });
     }
@@ -63,38 +63,44 @@ class _LetterTileState extends State<LetterTile> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  Color _getFillColor(LetterEvaluation evaluation) {
+  Color _getFillColor(LetterEvaluation evaluation, bool isDark) {
     switch (evaluation) {
       case LetterEvaluation.correct:
         return AppColors.correct;
       case LetterEvaluation.wrongPosition:
         return AppColors.wrongPosition;
       case LetterEvaluation.absent:
-        return AppColors.absent;
+        return isDark ? AppColors.absent : AppColors.keyAbsentLight;
       default:
         return Colors.transparent;
     }
   }
 
-  Border _getBorder(LetterEvaluation evaluation, String letter) {
+  Border _getBorder(LetterEvaluation evaluation, String letter, bool isDark) {
     if (evaluation == LetterEvaluation.correct ||
         evaluation == LetterEvaluation.wrongPosition ||
         evaluation == LetterEvaluation.absent) {
       return Border.all(color: Colors.transparent, width: 0);
     }
+    final borderBright = isDark ? AppColors.borderBright : AppColors.lightBorderBright;
+    final borderDefault = isDark ? AppColors.border : AppColors.lightBorder;
+
     if (letter.isNotEmpty) {
-      return Border.all(color: AppColors.borderBright, width: 2);
+      return Border.all(color: borderBright, width: 2);
     }
-    return Border.all(color: AppColors.border, width: 2);
+    return Border.all(color: borderDefault, width: 2);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
         final angle = _animation.value * pi;
         final isUnder = angle > pi / 2;
+        final textColor = (isUnder || isDark) ? Colors.white : AppColors.lightTextPrimary;
 
         return Transform(
           transform: Matrix4.identity()
@@ -105,12 +111,12 @@ class _LetterTileState extends State<LetterTile> with SingleTickerProviderStateM
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: isUnder
-                  ? _getFillColor(widget.evaluation)
+                  ? _getFillColor(widget.evaluation, isDark)
                   : Colors.transparent,
               border: isUnder
                   ? Border.all(color: Colors.transparent, width: 0)
-                  : _getBorder(widget.evaluation, widget.letter),
-              borderRadius: BorderRadius.zero, // Minimal Ink sharp corners
+                  : _getBorder(widget.evaluation, widget.letter, isDark),
+              borderRadius: BorderRadius.zero,
             ),
             child: Transform(
               transform: isUnder
@@ -119,7 +125,7 @@ class _LetterTileState extends State<LetterTile> with SingleTickerProviderStateM
               alignment: Alignment.center,
               child: Text(
                 widget.letter,
-                style: AppTypography.tileLetter,
+                style: AppTypography.tileLetter.copyWith(color: textColor),
               ),
             ),
           ),

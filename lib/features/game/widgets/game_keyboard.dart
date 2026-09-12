@@ -59,7 +59,6 @@ class GameKeyboard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
                   ),
                 ),
               ),
@@ -77,7 +76,6 @@ class GameKeyboard extends StatelessWidget {
                 customChild: const Icon(
                   Icons.backspace_outlined,
                   size: 20,
-                  color: Colors.white,
                 ),
               ),
             ],

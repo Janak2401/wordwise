@@ -95,6 +95,13 @@ class GameNotifier extends StateNotifier<GameState> {
     initGame();
   }
 
+  String _dateKey(DateTime date, int length) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return '$y-$m-$d-$length';
+  }
+
   Future<void> initGame({int? customLength}) async {
     final now = DateTime.now();
     final word = await _repo.getDailyWord(now, preferredLength: customLength);
@@ -106,6 +113,58 @@ class GameNotifier extends StateNotifier<GameState> {
       bookmarked = await _repo.isBookmarked(word.id);
     }
 
+    // Try to restore persisted state for today
+    final dateKey = _dateKey(now, length);
+    final saved = GameStateStore.getSavedGame(dateKey);
+
+    if (saved != null && word != null && saved['targetWordId'] == word.id) {
+      // Restore rows
+      final rawRows = saved['submittedRows'] as List?;
+      final restoredRows = rawRows?.map((row) {
+        final rowList = row as List;
+        return rowList.map((cell) {
+          final m = cell as Map;
+          return GuessLetter(
+            char: m['char'] as String,
+            evaluation: LetterEvaluation.values.firstWhere(
+              (e) => e.name == m['evaluation'],
+              orElse: () => LetterEvaluation.absent,
+            ),
+          );
+        }).toList();
+      }).toList() ?? <List<GuessLetter>>[];
+
+      // Restore key evaluations
+      final rawKeys = saved['keyEvaluations'] as Map?;
+      final restoredKeys = <String, LetterEvaluation>{};
+      rawKeys?.forEach((k, v) {
+        restoredKeys[k as String] = LetterEvaluation.values.firstWhere(
+          (e) => e.name == v,
+          orElse: () => LetterEvaluation.absent,
+        );
+      });
+
+      // Restore status
+      final statusStr = saved['status'] as String? ?? 'playing';
+      final restoredStatus = GameStatus.values.firstWhere(
+        (e) => e.name == statusStr,
+        orElse: () => GameStatus.playing,
+      );
+
+      state = GameState(
+        targetWord: word,
+        wordLength: length,
+        maxGuesses: maxGuesses,
+        submittedRows: restoredRows,
+        currentInput: '',
+        status: restoredStatus,
+        keyEvaluations: restoredKeys,
+        isBookmarked: bookmarked,
+      );
+      return;
+    }
+
+    // Fresh game
     state = GameState(
       targetWord: word,
       wordLength: length,
@@ -202,6 +261,33 @@ class GameNotifier extends StateNotifier<GameState> {
       keyEvaluations: updatedKeys,
       status: nextStatus,
     );
+
+    await _persistState();
+  }
+
+  Future<void> _persistState() async {
+    final word = state.targetWord;
+    if (word == null) return;
+    final now = DateTime.now();
+    final dateKey = _dateKey(now, state.wordLength);
+
+    final serializedRows = state.submittedRows.map((row) {
+      return row.map((gl) => {
+        'char': gl.char,
+        'evaluation': gl.evaluation.name,
+      }).toList();
+    }).toList();
+
+    final serializedKeys = state.keyEvaluations.map(
+      (k, v) => MapEntry(k, v.name),
+    );
+
+    await GameStateStore.saveGame(dateKey, {
+      'targetWordId': word.id,
+      'submittedRows': serializedRows,
+      'keyEvaluations': serializedKeys,
+      'status': state.status.name,
+    });
   }
 
   List<LetterEvaluation> _evaluateGuess(String guess, String target) {
@@ -271,3 +357,4 @@ class GameNotifier extends StateNotifier<GameState> {
     );
   }
 }
+

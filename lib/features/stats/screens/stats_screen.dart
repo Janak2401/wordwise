@@ -8,6 +8,13 @@ class StatsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
+    final borderColor = isDark ? AppColors.border : AppColors.lightBorder;
+    final surfaceColor = isDark ? AppColors.surface : const Color(0xFFE5E7EB);
+    final bgColor = isDark ? AppColors.background : AppColors.lightBackground;
+
     final played = StatsStore.totalPlayed;
     final won = StatsStore.totalWon;
     final winPercent = played > 0 ? ((won / played) * 100).toInt() : 0;
@@ -17,13 +24,14 @@ class StatsScreen extends StatelessWidget {
     final maxCount = dist.fold<int>(0, (prev, element) => element > prev ? element : prev);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: bgColor,
         elevation: 0,
+        iconTheme: IconThemeData(color: textSecondary),
         title: Text(
           'STATISTICS',
-          style: AppTypography.title.copyWith(letterSpacing: 2.0),
+          style: AppTypography.title.copyWith(letterSpacing: 2.0, color: textPrimary),
         ),
       ),
       body: SingleChildScrollView(
@@ -35,15 +43,15 @@ class StatsScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem('$played', 'PLAYED'),
-                _buildStatItem('$winPercent%', 'WIN %'),
-                _buildStatItem('$currentStreak', 'STREAK'),
-                _buildStatItem('$maxStreak', 'MAX'),
+                _buildStatItem('$played', 'PLAYED', textPrimary, textSecondary),
+                _buildStatItem('$winPercent%', 'WIN %', textPrimary, textSecondary),
+                _buildStatItem('$currentStreak', 'STREAK', textPrimary, textSecondary),
+                _buildStatItem('$maxStreak', 'MAX', textPrimary, textSecondary),
               ],
             ),
 
             const SizedBox(height: 36),
-            const Divider(color: AppColors.border),
+            Divider(color: borderColor),
             const SizedBox(height: 24),
 
             // Guess Distribution Title
@@ -53,7 +61,7 @@ class StatsScreen extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.5,
-                color: AppColors.textPrimary,
+                color: textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -73,8 +81,8 @@ class StatsScreen extends StatelessWidget {
                       width: 16,
                       child: Text(
                         '$guessNum',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          color: textSecondary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -86,7 +94,7 @@ class StatsScreen extends StatelessWidget {
                           Container(
                             height: 22,
                             decoration: BoxDecoration(
-                              color: AppColors.surface,
+                              color: surfaceColor,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -125,25 +133,25 @@ class StatsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String value, String label) {
+  Widget _buildStatItem(String value, String label, Color primaryColor, Color secondaryColor) {
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.w900,
-            color: AppColors.textPrimary,
+            color: primaryColor,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 1.0,
-            color: AppColors.textSecondary,
+            color: secondaryColor,
           ),
         ),
       ],

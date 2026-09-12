@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'core/providers/theme_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'data/datasources/dictionary_db.dart';
@@ -27,15 +28,19 @@ Future<void> main() async {
   );
 }
 
-class WordWiseApp extends StatelessWidget {
+class WordWiseApp extends ConsumerWidget {
   const WordWiseApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = ref.watch(themeProvider);
+
     return MaterialApp.router(
       title: 'WordWise',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       routerConfig: appRouter,
     );
   }

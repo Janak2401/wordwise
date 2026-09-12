@@ -19,27 +19,43 @@ class KeyboardKey extends StatelessWidget {
     this.customChild,
   });
 
-  Color _getBackgroundColor() {
+  Color _getBackgroundColor(bool isDark) {
     switch (evaluation) {
       case LetterEvaluation.correct:
         return AppColors.correct;
       case LetterEvaluation.wrongPosition:
         return AppColors.wrongPosition;
       case LetterEvaluation.absent:
-        return AppColors.absent;
+        return isDark ? AppColors.keyAbsentDark : AppColors.keyAbsentLight;
       default:
-        return AppColors.borderBright.withOpacity(0.5);
+        return isDark ? AppColors.keyDefaultDark : AppColors.keyDefaultLight;
+    }
+  }
+
+  Color _getTextColor(bool isDark) {
+    switch (evaluation) {
+      case LetterEvaluation.correct:
+      case LetterEvaluation.wrongPosition:
+        return Colors.white;
+      case LetterEvaluation.absent:
+        return isDark ? AppColors.keyTextMutedDark : Colors.white;
+      default:
+        return isDark ? Colors.white : AppColors.lightTextPrimary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = _getBackgroundColor(isDark);
+    final textColor = _getTextColor(isDark);
+
     return Expanded(
       flex: (flex * 10).toInt(),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 3.5),
         child: Material(
-          color: _getBackgroundColor(),
+          color: bgColor,
           borderRadius: BorderRadius.circular(4.0),
           child: InkWell(
             onTap: onTap,
@@ -47,11 +63,24 @@ class KeyboardKey extends StatelessWidget {
             child: Container(
               height: 52,
               alignment: Alignment.center,
-              child: customChild ??
-                  Text(
-                    label,
-                    style: AppTypography.keyLabel,
-                  ),
+              child: customChild != null
+                  ? IconTheme(
+                      data: IconThemeData(color: textColor),
+                      child: DefaultTextStyle(
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                        child: customChild!,
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: AppTypography.keyLabel.copyWith(
+                        color: textColor,
+                      ),
+                    ),
             ),
           ),
         ),

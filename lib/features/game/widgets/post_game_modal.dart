@@ -22,12 +22,17 @@ class PostGameModal extends ConsumerWidget {
     if (word == null) return const SizedBox.shrink();
 
     final streak = StatsStore.currentStreak;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
+    final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
+    final borderColor = isDark ? AppColors.border : AppColors.lightBorder;
+    final surfaceColor = isDark ? AppColors.surface : AppColors.lightBackground;
 
     return Container(
       padding: const EdgeInsets.all(24.0),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -42,7 +47,7 @@ class PostGameModal extends ConsumerWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -72,17 +77,17 @@ class PostGameModal extends ConsumerWidget {
                       children: [
                         Text(
                           word.word,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 2.0,
-                            color: AppColors.textPrimary,
+                            color: textPrimary,
                           ),
                         ),
                         if (word.phonetic != null)
                           Text(
                             word.phonetic!,
-                            style: AppTypography.bodySecondary,
+                            style: AppTypography.bodySecondary.copyWith(color: textSecondary),
                           ),
                       ],
                     ),
@@ -99,12 +104,12 @@ class PostGameModal extends ConsumerWidget {
               if (word.partOfSpeech != null)
                 Text(
                   word.partOfSpeech!,
-                  style: AppTypography.headerItalic,
+                  style: AppTypography.headerItalic.copyWith(color: textSecondary),
                 ),
               const SizedBox(height: 4),
               Text(
                 word.definition,
-                style: AppTypography.bodyRegular,
+                style: AppTypography.bodyRegular.copyWith(color: textPrimary),
               ),
 
               // Example Sentence
@@ -112,7 +117,7 @@ class PostGameModal extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Text(
                   '"${word.example}"',
-                  style: AppTypography.bodyItalic,
+                  style: AppTypography.bodyItalic.copyWith(color: textSecondary),
                 ),
               ],
 
@@ -129,7 +134,7 @@ class PostGameModal extends ConsumerWidget {
               ],
 
               const SizedBox(height: 24),
-              const Divider(color: AppColors.border),
+              Divider(color: borderColor),
               const SizedBox(height: 16),
 
               // Action Buttons: Bookmark & Share
@@ -139,21 +144,23 @@ class PostGameModal extends ConsumerWidget {
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(
-                          color: gameState.isBookmarked ? AppColors.correct : AppColors.borderBright,
+                          color: gameState.isBookmarked
+                              ? AppColors.correct
+                              : (isDark ? AppColors.borderBright : AppColors.lightBorderBright),
                         ),
-                        backgroundColor: gameState.isBookmarked ? AppColors.correct.withOpacity(0.15) : null,
+                        backgroundColor: gameState.isBookmarked ? AppColors.correct.withValues(alpha: 0.15) : null,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       onPressed: () => ref.read(gameProvider.notifier).toggleBookmark(),
                       icon: Icon(
                         gameState.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-                        color: gameState.isBookmarked ? AppColors.correct : AppColors.textPrimary,
+                        color: gameState.isBookmarked ? AppColors.correct : textPrimary,
                         size: 20,
                       ),
                       label: Text(
                         gameState.isBookmarked ? 'SAVED' : 'SAVE WORD',
                         style: TextStyle(
-                          color: gameState.isBookmarked ? AppColors.correct : AppColors.textPrimary,
+                          color: gameState.isBookmarked ? AppColors.correct : textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -195,3 +202,4 @@ class PostGameModal extends ConsumerWidget {
     );
   }
 }
+
