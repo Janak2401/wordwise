@@ -5,8 +5,9 @@ import '../../../core/utils/haptic_utils.dart';
 import '../../../data/models/guess_result.dart';
 import '../../../data/models/word.dart';
 import '../../../data/repositories/dictionary_repository.dart';
-import '../../../data/datasources/stats_store.dart';
+import '../../../data/datasources/settings_store.dart';
 import '../../../data/datasources/game_state_store.dart';
+import '../../stats/providers/stats_provider.dart';
 
 enum GameStatus { playing, won, lost }
 
@@ -22,6 +23,12 @@ class GameState {
   final String? message;
   final bool isBookmarked;
 
+  /// Row to play the flip animation on; null when nothing was submitted this session.
+  final int? revealRow;
+
+  /// Days since the schedule epoch for the loaded game, shown as the puzzle number.
+  final int dayNumber;
+
   const GameState({
     this.targetWord,
     required this.wordLength,
@@ -33,7 +40,12 @@ class GameState {
     this.isShaking = false,
     this.message,
     this.isBookmarked = false,
+    this.revealRow,
+    this.dayNumber = 0,
   });
+
+  /// The length can only be changed before the first guess of the day.
+  bool get isLengthLocked => submittedRows.isNotEmpty || status != GameStatus.playing;
 
   GameState copyWith({
     Word? targetWord,
@@ -46,6 +58,7 @@ class GameState {
     bool? isShaking,
     String? message,
     bool? isBookmarked,
+    int? revealRow,
   }) {
     return GameState(
       targetWord: targetWord ?? this.targetWord,
@@ -58,6 +71,8 @@ class GameState {
       isShaking: isShaking ?? this.isShaking,
       message: message,
       isBookmarked: isBookmarked ?? this.isBookmarked,
+      revealRow: revealRow ?? this.revealRow,
+      dayNumber: dayNumber,
     );
   }
 }
@@ -76,14 +91,26 @@ final ttsProvider = Provider<FlutterTts>((ref) {
 final gameProvider = StateNotifierProvider<GameNotifier, GameState>((ref) {
   final repo = ref.watch(dictionaryRepoProvider);
   final tts = ref.watch(ttsProvider);
-  return GameNotifier(repo, tts);
+  final stats = ref.read(statsProvider.notifier);
+  return GameNotifier(repo, tts, stats);
 });
 
 class GameNotifier extends StateNotifier<GameState> {
   final DictionaryRepository _repo;
   final FlutterTts _tts;
+  final StatsNotifier _stats;
 
-  GameNotifier(this._repo, this._tts)
+  /// Calendar date the loaded game belongs to. Saves and stats use this, not the clock,
+  /// so a game started before midnight is still recorded against its own day.
+  DateTime _gameDate = _today();
+
+  /// Guards against an older, slower [initGame] overwriting a newer one.
+  int _loadToken = 0;
+
+  /// Blocks a second ENTER while the first guess is still being validated.
+  bool _submitting = false;
+
+  GameNotifier(this._repo, this._tts, this._stats)
       : super(const GameState(
           wordLength: 5,
           maxGuesses: 6,
@@ -95,34 +122,38 @@ class GameNotifier extends StateNotifier<GameState> {
     initGame();
   }
 
-  String _dateKey(DateTime date, int length) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d-$length';
+  static DateTime _today() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
   }
 
-  Future<void> initGame({int? customLength}) async {
-    final now = DateTime.now();
-    final word = await _repo.getDailyWord(now, preferredLength: customLength);
-    final length = word?.length ?? customLength ?? 5;
-    final maxGuesses = GameConstants.getMaxGuesses(length);
+  /// Loads today's game. A game already in progress keeps its length; otherwise
+  /// [length] (or the last chosen length) is used.
+  Future<void> initGame({int? length}) async {
+    final token = ++_loadToken;
+    final today = _today();
+    final saved = GameStateStore.getSavedGame(GameConstants.dateKey(today));
+    final savedRows = saved?['submittedRows'] as List?;
+    final hasProgress = savedRows != null && savedRows.isNotEmpty;
 
-    bool bookmarked = false;
-    if (word != null) {
-      bookmarked = await _repo.isBookmarked(word.id);
+    var wordLength = hasProgress
+        ? (saved!['wordLength'] as int? ?? SettingsStore.preferredWordLength)
+        : (length ?? SettingsStore.preferredWordLength);
+    if (!GameConstants.supportedLengths.contains(wordLength)) {
+      wordLength = GameConstants.supportedLengths.first;
     }
+    final maxGuesses = GameConstants.getMaxGuesses(wordLength);
 
-    // Try to restore persisted state for today
-    final dateKey = _dateKey(now, length);
-    final saved = GameStateStore.getSavedGame(dateKey);
+    final word = await _repo.getDailyWord(today, wordLength);
+    final bookmarked = word != null && await _repo.isBookmarked(word.id);
+    if (token != _loadToken) return;
 
-    if (saved != null && word != null && saved['targetWordId'] == word.id) {
-      // Restore rows
-      final rawRows = saved['submittedRows'] as List?;
-      final restoredRows = rawRows?.map((row) {
-        final rowList = row as List;
-        return rowList.map((cell) {
+    _gameDate = today;
+    final dayNumber = GameConstants.dayNumber(today);
+
+    if (hasProgress && word != null && saved!['targetWordId'] == word.id) {
+      final restoredRows = savedRows.map((row) {
+        return (row as List).map((cell) {
           final m = cell as Map;
           return GuessLetter(
             char: m['char'] as String,
@@ -132,49 +163,61 @@ class GameNotifier extends StateNotifier<GameState> {
             ),
           );
         }).toList();
-      }).toList() ?? <List<GuessLetter>>[];
+      }).toList();
 
-      // Restore key evaluations
-      final rawKeys = saved['keyEvaluations'] as Map?;
       final restoredKeys = <String, LetterEvaluation>{};
-      rawKeys?.forEach((k, v) {
+      (saved['keyEvaluations'] as Map?)?.forEach((k, v) {
         restoredKeys[k as String] = LetterEvaluation.values.firstWhere(
           (e) => e.name == v,
           orElse: () => LetterEvaluation.absent,
         );
       });
 
-      // Restore status
-      final statusStr = saved['status'] as String? ?? 'playing';
       final restoredStatus = GameStatus.values.firstWhere(
-        (e) => e.name == statusStr,
+        (e) => e.name == (saved['status'] as String? ?? 'playing'),
         orElse: () => GameStatus.playing,
       );
 
       state = GameState(
         targetWord: word,
-        wordLength: length,
+        wordLength: wordLength,
         maxGuesses: maxGuesses,
         submittedRows: restoredRows,
         currentInput: '',
         status: restoredStatus,
         keyEvaluations: restoredKeys,
         isBookmarked: bookmarked,
+        dayNumber: dayNumber,
       );
       return;
     }
 
-    // Fresh game
     state = GameState(
       targetWord: word,
-      wordLength: length,
+      wordLength: wordLength,
       maxGuesses: maxGuesses,
       submittedRows: [],
       currentInput: '',
       status: GameStatus.playing,
       keyEvaluations: {},
       isBookmarked: bookmarked,
+      dayNumber: dayNumber,
     );
+  }
+
+  /// Switches between 5 and 6 letters; only allowed before the first guess.
+  Future<void> changeLength(int length) async {
+    if (state.isLengthLocked || length == state.wordLength) return;
+    if (!GameConstants.supportedLengths.contains(length)) return;
+    await SettingsStore.setPreferredWordLength(length);
+    await initGame(length: length);
+  }
+
+  /// Loads the new day's word if the date has changed since the game was loaded.
+  Future<void> refreshIfNewDay() async {
+    if (_today() == _gameDate) return;
+    await initGame();
+    _stats.reload();
   }
 
   void addLetter(String letter) {
@@ -196,6 +239,16 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   Future<void> submitGuess() async {
+    if (_submitting) return;
+    _submitting = true;
+    try {
+      await _submitGuess();
+    } finally {
+      _submitting = false;
+    }
+  }
+
+  Future<void> _submitGuess() async {
     if (state.status != GameStatus.playing) return;
     if (state.currentInput.length < state.wordLength) {
       triggerShake('Not enough letters');
@@ -246,11 +299,9 @@ class GameNotifier extends StateNotifier<GameState> {
     if (isWon) {
       nextStatus = GameStatus.won;
       HapticUtils.heavy();
-      _recordStats(true, updatedRows.length);
     } else if (isLost) {
       nextStatus = GameStatus.lost;
       HapticUtils.heavy();
-      _recordStats(false, updatedRows.length);
     } else {
       HapticUtils.medium();
     }
@@ -260,16 +311,18 @@ class GameNotifier extends StateNotifier<GameState> {
       currentInput: '',
       keyEvaluations: updatedKeys,
       status: nextStatus,
+      revealRow: updatedRows.length - 1,
     );
 
     await _persistState();
+    if (nextStatus != GameStatus.playing) {
+      await _recordResult(isWon, updatedRows.length);
+    }
   }
 
   Future<void> _persistState() async {
     final word = state.targetWord;
     if (word == null) return;
-    final now = DateTime.now();
-    final dateKey = _dateKey(now, state.wordLength);
 
     final serializedRows = state.submittedRows.map((row) {
       return row.map((gl) => {
@@ -282,8 +335,9 @@ class GameNotifier extends StateNotifier<GameState> {
       (k, v) => MapEntry(k, v.name),
     );
 
-    await GameStateStore.saveGame(dateKey, {
+    await GameStateStore.saveGame(GameConstants.dateKey(_gameDate), {
       'targetWordId': word.id,
+      'wordLength': state.wordLength,
       'submittedRows': serializedRows,
       'keyEvaluations': serializedKeys,
       'status': state.status.name,
@@ -348,13 +402,20 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  void _recordStats(bool won, int guessesUsed) {
-    final dateStr = DateTime.now().toIso8601String().substring(0, 10);
-    StatsStore.recordGameResult(
+  Future<void> _recordResult(bool won, int guessesUsed) async {
+    final word = state.targetWord;
+    if (word == null) return;
+    await _repo.recordDailyResult(
+      date: _gameDate,
+      wordId: word.id,
+      wordLength: word.length,
+      solved: won,
+      guesses: guessesUsed,
+    );
+    await _stats.recordGameResult(
       won: won,
       guessesUsed: guessesUsed,
-      dateStr: dateStr,
+      date: _gameDate,
     );
   }
 }
-

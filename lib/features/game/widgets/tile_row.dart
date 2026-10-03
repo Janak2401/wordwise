@@ -9,6 +9,7 @@ class TileRow extends StatefulWidget {
   final String? currentInput;
   final bool isCurrentRow;
   final bool isShaking;
+  final bool animateReveal;
 
   const TileRow({
     super.key,
@@ -17,6 +18,7 @@ class TileRow extends StatefulWidget {
     this.currentInput,
     this.isCurrentRow = false,
     this.isShaking = false,
+    this.animateReveal = false,
   });
 
   @override
@@ -73,7 +75,7 @@ class _TileRowState extends State<TileRow> with SingleTickerProviderStateMixin {
               if (hasLetters) {
                 char = widget.letters![index].char;
                 eval = widget.letters![index].evaluation;
-                animate = true;
+                animate = widget.animateReveal;
               } else if (widget.isCurrentRow && widget.currentInput != null) {
                 if (index < widget.currentInput!.length) {
                   char = widget.currentInput![index];

@@ -41,8 +41,7 @@ class _LetterTileState extends State<LetterTile> with SingleTickerProviderStateM
       Future.delayed(Duration(milliseconds: widget.index * 180), () {
         if (mounted) _controller.forward();
       });
-    } else if (widget.evaluation != LetterEvaluation.empty &&
-        widget.evaluation != LetterEvaluation.tbd) {
+    } else if (_isRevealed(widget.evaluation)) {
       _controller.value = 1.0;
     }
   }
@@ -54,8 +53,14 @@ class _LetterTileState extends State<LetterTile> with SingleTickerProviderStateM
       Future.delayed(Duration(milliseconds: widget.index * 180), () {
         if (mounted) _controller.forward(from: 0.0);
       });
+    } else if (!widget.animateFlip) {
+      // Restored or reset tiles snap to their final face without animating.
+      _controller.value = _isRevealed(widget.evaluation) ? 1.0 : 0.0;
     }
   }
+
+  static bool _isRevealed(LetterEvaluation evaluation) =>
+      evaluation != LetterEvaluation.empty && evaluation != LetterEvaluation.tbd;
 
   @override
   void dispose() {

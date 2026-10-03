@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/providers/theme_provider.dart';
-import '../../../data/datasources/stats_store.dart';
+import '../../stats/providers/stats_provider.dart';
 import '../providers/game_provider.dart';
 import '../widgets/game_grid.dart';
 import '../widgets/game_keyboard.dart';
@@ -18,30 +18,57 @@ class GameScreen extends ConsumerStatefulWidget {
   ConsumerState<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends ConsumerState<GameScreen> {
+class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObserver {
   bool _modalShown = false;
 
-  void _checkGameStatus(GameState state) {
-    if (state.status != GameStatus.playing && !_modalShown) {
-      _modalShown = true;
-      Future.delayed(const Duration(milliseconds: 1800), () {
-        if (!mounted) return;
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (ctx) => PostGameModal(isWon: state.status == GameStatus.won),
-        ).then((_) {
-          _modalShown = false;
-        });
-      });
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(gameProvider.notifier).refreshIfNewDay();
     }
+  }
+
+  /// Auto-opens results only when a guess just finished the game, not when a finished game is restored.
+  void _onGameStateChanged(GameState? previous, GameState next) {
+    final justFinished = previous != null &&
+        previous.status == GameStatus.playing &&
+        next.status != GameStatus.playing &&
+        previous.targetWord?.id == next.targetWord?.id;
+    if (justFinished) {
+      // Let the tile flip finish first.
+      Future.delayed(const Duration(milliseconds: 1800), _showResults);
+    }
+  }
+
+  void _showResults() {
+    if (!mounted || _modalShown) return;
+    _modalShown = true;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => const PostGameModal(),
+    ).then((_) {
+      _modalShown = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameProvider);
-    final streak = StatsStore.currentStreak;
+    final streak = ref.watch(statsProvider).currentStreak;
     final isDark = ref.watch(themeProvider);
 
     final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
@@ -50,9 +77,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     final surfaceColor = isDark ? AppColors.surface : AppColors.lightSurface;
     final bgColor = isDark ? AppColors.background : AppColors.lightBackground;
 
-    ref.listen<GameState>(gameProvider, (previous, next) {
-      _checkGameStatus(next);
-    });
+    ref.listen<GameState>(gameProvider, _onGameStateChanged);
 
     final currentGuessCount = gameState.submittedRows.length + (gameState.currentInput.isNotEmpty ? 1 : 0);
 
@@ -71,9 +96,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
           onPressed: () => context.push('/how-to-play'),
         ),
         actions: [
-          // Length Selector Dropdown (5, 6, 7)
+          // Length Selector (5, 6): locked after the first guess so only one word is played per day
           PopupMenuButton<int>(
-            tooltip: 'Word Length',
+            tooltip: gameState.isLengthLocked ? 'Length locked until tomorrow' : 'Word Length',
+            enabled: !gameState.isLengthLocked,
             initialValue: gameState.wordLength,
             color: surfaceColor,
             icon: Container(
@@ -82,24 +108,28 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                 border: Border.all(color: borderColor),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Text(
-                '${gameState.wordLength}L',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: AppColors.correct,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${gameState.wordLength}L',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: gameState.isLengthLocked ? textSecondary : AppColors.correct,
+                    ),
+                  ),
+                  if (gameState.isLengthLocked) ...[
+                    const SizedBox(width: 2),
+                    Icon(Icons.lock_rounded, size: 12, color: textSecondary),
+                  ],
+                ],
               ),
             ),
-            onSelected: (len) {
-              if (len != gameState.wordLength) {
-                ref.read(gameProvider.notifier).initGame(customLength: len);
-              }
-            },
+            onSelected: (len) => ref.read(gameProvider.notifier).changeLength(len),
             itemBuilder: (context) => [
               PopupMenuItem(value: 5, child: Text('5 Letters (6 Guesses)', style: TextStyle(color: textPrimary))),
               PopupMenuItem(value: 6, child: Text('6 Letters (7 Guesses)', style: TextStyle(color: textPrimary))),
-              PopupMenuItem(value: 7, child: Text('7 Letters (8 Guesses)', style: TextStyle(color: textPrimary))),
             ],
           ),
           // Streak Counter
@@ -176,19 +206,37 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                     submittedRows: gameState.submittedRows,
                     currentInput: gameState.currentInput,
                     isShaking: gameState.isShaking,
+                    revealRow: gameState.revealRow,
                   ),
                 ),
               ),
             ),
 
-            // Guess Counter
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6.0),
-              child: Text(
-                'Guess $currentGuessCount of ${gameState.maxGuesses}',
-                style: AppTypography.bodySecondary.copyWith(fontSize: 12, color: textSecondary),
+            // Guess counter while playing; results button once today's word is done
+            if (gameState.status == GameStatus.playing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6.0),
+                child: Text(
+                  'Guess $currentGuessCount of ${gameState.maxGuesses}',
+                  style: AppTypography.bodySecondary.copyWith(fontSize: 12, color: textSecondary),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4.0),
+                child: TextButton.icon(
+                  onPressed: _showResults,
+                  icon: const Icon(Icons.insights_rounded, size: 18, color: AppColors.correct),
+                  label: const Text(
+                    'SEE RESULTS',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: AppColors.correct,
+                    ),
+                  ),
+                ),
               ),
-            ),
 
             // Virtual Keyboard
             GameKeyboard(

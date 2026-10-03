@@ -30,12 +30,12 @@ class HowToPlayScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Guess the word in dynamic attempts.',
+              'One new word every day.',
               style: AppTypography.bodyRegular.copyWith(fontWeight: FontWeight.bold, color: textPrimary),
             ),
             const SizedBox(height: 8),
             Text(
-              '• 5-letter word = 6 guesses\n• 6-letter word = 7 guesses\n• 7-letter word = 8 guesses',
+              '• 5-letter word = 6 guesses\n• 6-letter word = 7 guesses\n• Pick the length before your first guess; it locks until tomorrow',
               style: AppTypography.bodySecondary.copyWith(color: textSecondary),
             ),
             const SizedBox(height: 16),

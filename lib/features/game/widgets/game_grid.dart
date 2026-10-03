@@ -8,6 +8,7 @@ class GameGrid extends StatelessWidget {
   final List<List<GuessLetter>> submittedRows;
   final String currentInput;
   final bool isShaking;
+  final int? revealRow;
 
   const GameGrid({
     super.key,
@@ -16,6 +17,7 @@ class GameGrid extends StatelessWidget {
     required this.submittedRows,
     required this.currentInput,
     this.isShaking = false,
+    this.revealRow,
   });
 
   @override
@@ -36,6 +38,7 @@ class GameGrid extends StatelessWidget {
                 currentInput: isCurrent ? currentInput : null,
                 isCurrentRow: isCurrent,
                 isShaking: isCurrent && isShaking,
+                animateReveal: rowIndex == revealRow,
               ),
             );
           }),

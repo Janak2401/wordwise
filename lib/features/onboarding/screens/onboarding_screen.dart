@@ -18,7 +18,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<Map<String, String>> _pages = [
     {
       'title': 'Guess the Word',
-      'body': 'Guess the hidden vocabulary word in 6 to 8 attempts. Tiles change color to give you clues.',
+      'body': 'Guess one hidden vocabulary word each day in 6 or 7 attempts. Tiles change color to give you clues.',
       'icon': '🧩',
     },
     {

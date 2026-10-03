@@ -17,8 +17,24 @@ class DictionaryRepository {
     }
   }
 
-  Future<Word?> getDailyWord(DateTime date, {int? preferredLength}) {
-    return _db.getDailyWordForDate(date, preferredLength: preferredLength);
+  Future<Word?> getDailyWord(DateTime date, int length) {
+    return _db.getDailyWordForDate(date, length);
+  }
+
+  Future<void> recordDailyResult({
+    required DateTime date,
+    required int wordId,
+    required int wordLength,
+    required bool solved,
+    required int guesses,
+  }) {
+    return _db.recordDailyResult(
+      date: date,
+      wordId: wordId,
+      wordLength: wordLength,
+      solved: solved,
+      guesses: guesses,
+    );
   }
 
   Future<bool> isValidWord(String word) async {

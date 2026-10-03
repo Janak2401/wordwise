@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../data/datasources/stats_store.dart';
+import '../providers/stats_provider.dart';
 
-class StatsScreen extends StatelessWidget {
+class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
     final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
@@ -15,12 +16,12 @@ class StatsScreen extends StatelessWidget {
     final surfaceColor = isDark ? AppColors.surface : const Color(0xFFE5E7EB);
     final bgColor = isDark ? AppColors.background : AppColors.lightBackground;
 
-    final played = StatsStore.totalPlayed;
-    final won = StatsStore.totalWon;
-    final winPercent = played > 0 ? ((won / played) * 100).toInt() : 0;
-    final currentStreak = StatsStore.currentStreak;
-    final maxStreak = StatsStore.maxStreak;
-    final dist = StatsStore.guessDistribution;
+    final stats = ref.watch(statsProvider);
+    final played = stats.played;
+    final winPercent = stats.winPercent;
+    final currentStreak = stats.currentStreak;
+    final maxStreak = stats.maxStreak;
+    final dist = stats.guessDistribution;
     final maxCount = dist.fold<int>(0, (prev, element) => element > prev ? element : prev);
 
     return Scaffold(

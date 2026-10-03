@@ -3,16 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/share_utils.dart';
-import '../../../data/datasources/stats_store.dart';
+import '../../stats/providers/stats_provider.dart';
 import '../providers/game_provider.dart';
+import 'next_word_countdown.dart';
 
 class PostGameModal extends ConsumerWidget {
-  final bool isWon;
-
-  const PostGameModal({
-    super.key,
-    required this.isWon,
-  });
+  const PostGameModal({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -21,7 +17,9 @@ class PostGameModal extends ConsumerWidget {
 
     if (word == null) return const SizedBox.shrink();
 
-    final streak = StatsStore.currentStreak;
+    final isWon = gameState.status == GameStatus.won;
+
+    final streak = ref.watch(statsProvider).currentStreak;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
     final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
@@ -137,6 +135,17 @@ class PostGameModal extends ConsumerWidget {
               Divider(color: borderColor),
               const SizedBox(height: 16),
 
+              NextWordCountdown(
+                labelColor: textSecondary,
+                valueColor: textPrimary,
+                onElapsed: () {
+                  final notifier = ref.read(gameProvider.notifier);
+                  Navigator.of(context).maybePop();
+                  notifier.refreshIfNewDay();
+                },
+              ),
+              const SizedBox(height: 20),
+
               // Action Buttons: Bookmark & Share
               Row(
                 children: [
@@ -175,7 +184,7 @@ class PostGameModal extends ConsumerWidget {
                       ),
                       onPressed: () {
                         final gridText = ShareUtils.generateEmojiGrid(
-                          targetWord: word.word,
+                          puzzleNumber: gameState.dayNumber + 1,
                           guessRows: gameState.submittedRows,
                           maxGuesses: gameState.maxGuesses,
                           streak: streak,

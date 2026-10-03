@@ -17,6 +17,7 @@ Future<void> main() async {
   await GameStateStore.init();
   await StatsStore.init();
   await SettingsStore.init();
+  await _resetStaleLocalData();
 
   // Initialize SQLite dictionary database
   await DictionaryDatabase.instance.database;
@@ -26,6 +27,17 @@ Future<void> main() async {
       child: WordWiseApp(),
     ),
   );
+}
+
+/// Bump with the dictionary schema: word ids change on rebuild, so saved games and stats from
+/// an older word list no longer line up.
+const int _localDataVersion = 2;
+
+Future<void> _resetStaleLocalData() async {
+  if (SettingsStore.dataVersion >= _localDataVersion) return;
+  await GameStateStore.box.clear();
+  await StatsStore.box.clear();
+  await SettingsStore.setDataVersion(_localDataVersion);
 }
 
 class WordWiseApp extends ConsumerWidget {

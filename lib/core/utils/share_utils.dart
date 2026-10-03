@@ -3,7 +3,7 @@ import '../../data/models/guess_result.dart';
 
 class ShareUtils {
   static String generateEmojiGrid({
-    required String targetWord,
+    required int puzzleNumber,
     required List<List<GuessLetter>> guessRows,
     required int maxGuesses,
     required int streak,
@@ -13,7 +13,7 @@ class ShareUtils {
         guessRows.last.every((l) => l.evaluation == LetterEvaluation.correct);
 
     final scoreStr = isWon ? '${guessRows.length}/$maxGuesses' : 'X/$maxGuesses';
-    buffer.writeln('WordWise $scoreStr 🔥 $streak');
+    buffer.writeln('WordWise #$puzzleNumber $scoreStr 🔥 $streak');
     buffer.writeln();
 
     for (final row in guessRows) {
