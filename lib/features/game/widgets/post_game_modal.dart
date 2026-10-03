@@ -6,6 +6,7 @@ import '../../../core/utils/share_utils.dart';
 import '../../stats/providers/stats_provider.dart';
 import '../providers/game_provider.dart';
 import 'next_word_countdown.dart';
+import '../../../core/theme/app_theme.dart';
 
 class PostGameModal extends ConsumerWidget {
   const PostGameModal({super.key});
@@ -21,9 +22,10 @@ class PostGameModal extends ConsumerWidget {
 
     final streak = ref.watch(statsProvider).currentStreak;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
-    final borderColor = isDark ? AppColors.border : AppColors.lightBorder;
+    final palette = AppPalette.of(context);
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final borderColor = palette.border;
     final surfaceColor = isDark ? AppColors.surface : AppColors.lightBackground;
 
     return Container(
@@ -155,7 +157,7 @@ class PostGameModal extends ConsumerWidget {
                         side: BorderSide(
                           color: gameState.isBookmarked
                               ? AppColors.correct
-                              : (isDark ? AppColors.borderBright : AppColors.lightBorderBright),
+                              : palette.borderBright,
                         ),
                         backgroundColor: gameState.isBookmarked ? AppColors.correct.withValues(alpha: 0.15) : null,
                         padding: const EdgeInsets.symmetric(vertical: 14),

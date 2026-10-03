@@ -10,6 +10,7 @@ import '../widgets/game_grid.dart';
 import '../widgets/game_keyboard.dart';
 import '../widgets/definition_hint.dart';
 import '../widgets/post_game_modal.dart';
+import '../../../core/theme/app_theme.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   const GameScreen({super.key});
@@ -70,12 +71,13 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
     final gameState = ref.watch(gameProvider);
     final streak = ref.watch(statsProvider).currentStreak;
     final isDark = ref.watch(themeProvider);
+    final palette = AppPalette.of(context);
 
-    final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
-    final borderColor = isDark ? AppColors.border : AppColors.lightBorder;
-    final surfaceColor = isDark ? AppColors.surface : AppColors.lightSurface;
-    final bgColor = isDark ? AppColors.background : AppColors.lightBackground;
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final borderColor = palette.border;
+    final surfaceColor = palette.surface;
+    final bgColor = palette.background;
 
     ref.listen<GameState>(gameProvider, _onGameStateChanged);
 

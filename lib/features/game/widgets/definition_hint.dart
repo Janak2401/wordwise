@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/theme/app_theme.dart';
 
 class DefinitionHint extends StatelessWidget {
   final String? definition;
@@ -23,7 +24,7 @@ class DefinitionHint extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
       child: Text(
         '"$posPrefix$definition"',
-        style: AppTypography.bodyItalic,
+        style: AppTypography.bodyItalic.copyWith(color: AppPalette.of(context).textSecondary),
         textAlign: TextAlign.center,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,

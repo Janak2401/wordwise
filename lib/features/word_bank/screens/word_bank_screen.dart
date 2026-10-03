@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/bookmarked_word.dart';
 import '../../game/providers/game_provider.dart';
+import '../../../core/theme/app_theme.dart';
 
 final bookmarkedWordsProvider = FutureProvider.autoDispose<List<BookmarkedWord>>((ref) async {
   final repo = ref.watch(dictionaryRepoProvider);
@@ -22,12 +23,12 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
-    final borderColor = isDark ? AppColors.border : AppColors.lightBorder;
-    final surfaceColor = isDark ? AppColors.surface : AppColors.lightSurface;
-    final bgColor = isDark ? AppColors.background : AppColors.lightBackground;
+    final palette = AppPalette.of(context);
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final borderColor = palette.border;
+    final surfaceColor = palette.surface;
+    final bgColor = palette.background;
 
     final wordsAsync = ref.watch(bookmarkedWordsProvider);
     final tts = ref.watch(ttsProvider);
@@ -90,7 +91,7 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.bookmark_border_rounded, size: 64, color: isDark ? AppColors.borderBright : AppColors.lightBorderBright),
+                          Icon(Icons.bookmark_border_rounded, size: 64, color: palette.borderBright),
                           const SizedBox(height: 16),
                           Text(
                             _searchQuery.isEmpty ? 'No words bookmarked yet.' : 'No matching words found.',

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/theme/app_theme.dart';
 
 class HowToPlayScreen extends StatelessWidget {
   const HowToPlayScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? AppColors.textPrimary : AppColors.lightTextPrimary;
-    final textSecondary = isDark ? AppColors.textSecondary : AppColors.lightTextSecondary;
-    final borderColor = isDark ? AppColors.border : AppColors.lightBorder;
-    final bgColor = isDark ? AppColors.background : AppColors.lightBackground;
+    final palette = AppPalette.of(context);
+    final textPrimary = palette.textPrimary;
+    final textSecondary = palette.textSecondary;
+    final borderColor = palette.border;
+    final bgColor = palette.background;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -60,7 +61,7 @@ class HowToPlayScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _buildExampleTile('I', AppColors.wrongPosition, 'I is in the word but in the wrong spot.', textSecondary),
             const SizedBox(height: 16),
-            _buildExampleTile('S', isDark ? AppColors.absent : AppColors.keyAbsentLight, 'S is not in the word in any spot.', textSecondary),
+            _buildExampleTile('S', palette.absent, 'S is not in the word in any spot.', textSecondary),
             const SizedBox(height: 28),
             Divider(color: borderColor),
             const SizedBox(height: 16),

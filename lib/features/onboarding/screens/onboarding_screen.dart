@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../data/datasources/settings_store.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -40,8 +41,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: palette.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -51,7 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 alignment: Alignment.topRight,
                 child: TextButton(
                   onPressed: _finishOnboarding,
-                  child: const Text('SKIP', style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                  child: Text('SKIP', style: TextStyle(color: palette.textSecondary, fontWeight: FontWeight.bold)),
                 ),
               ),
               Expanded(
@@ -68,13 +71,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         const SizedBox(height: 32),
                         Text(
                           item['title']!,
-                          style: AppTypography.title.copyWith(fontSize: 24, letterSpacing: 1.0),
+                          style: AppTypography.title.copyWith(fontSize: 24, letterSpacing: 1.0, color: palette.textPrimary),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           item['body']!,
-                          style: AppTypography.bodySecondary.copyWith(fontSize: 16, height: 1.5),
+                          style: AppTypography.bodySecondary.copyWith(fontSize: 16, height: 1.5, color: palette.textSecondary),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -90,7 +93,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     height: 8,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
-                      color: _currentPage == idx ? AppColors.correct : AppColors.border,
+                      color: _currentPage == idx ? AppColors.correct : palette.border,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   );
