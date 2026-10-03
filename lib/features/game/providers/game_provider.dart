@@ -395,6 +395,16 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
+  /// Re-reads whether today's word is bookmarked, after the Word Bank changes it.
+  Future<void> syncBookmark() async {
+    final word = state.targetWord;
+    if (word == null) return;
+    final bookmarked = await _repo.isBookmarked(word.id);
+    if (bookmarked != state.isBookmarked) {
+      state = state.copyWith(isBookmarked: bookmarked);
+    }
+  }
+
   Future<void> speakWord() async {
     final word = state.targetWord?.word;
     if (word != null) {

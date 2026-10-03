@@ -6,10 +6,10 @@
 
 ## 🌟 Key Features
 
-- **Dynamic Word Lengths & Guess Limits**:
-  - 5 letters $\rightarrow$ 6 guesses
-  - 6 letters $\rightarrow$ 7 guesses
-  - 7 letters $\rightarrow$ 8 guesses
+- **One Word a Day**:
+  - Choose 5 letters (6 guesses) or 6 letters (7 guesses) before your first guess; the choice locks until tomorrow.
+  - 365 curated words per length, so neither length repeats for a year. Every device gets the same word on the same day.
+  - Countdown to the next word, and a numbered share grid (`WordWise #12 4/6`).
 - **Vocabulary-First Gameplay**:
   - Real-time definition clues during the game.
   - Comprehensive post-game review with phonetics, parts of speech, examples, and synonyms.
@@ -18,7 +18,7 @@
   - Bookmark challenging words to a local study deck.
   - Full-text search across saved words and definitions.
 - **Stats & Progress Tracking**:
-  - Win percentage, current streak, max streak, and interactive guess distribution histograms.
+  - Win percentage, current streak, max streak, and guess distribution histogram. A missed day breaks the streak.
 - **Minimal Ink Design**:
   - Distraction-free, flat dark charcoal aesthetic (`#121213`) with smooth 3D tile animations and custom tactile keyboard.
 - **100% Offline-First**:
@@ -26,16 +26,25 @@
 
 ---
 
+## 📖 Word Data
+
+- `assets/data/words.json` holds the answer lists: `five` and `six`, 365 entries each. Each list's order is its daily play order (day 0 is `GameConstants.scheduleEpoch`).
+- Each entry has `word`, `part_of_speech`, `definition` (shown as the in-game clue, so it never contains the word), `phonetic`, `example`, `synonyms` and `difficulty` (1–3).
+- `assets/data/valid_guesses.txt` is the list of accepted 5- and 6-letter guesses.
+- After changing `words.json`, bump `_schemaVersion` in `dictionary_db.dart` and `_localDataVersion` in `main.dart` so installed apps rebuild their word table.
+
+---
+
 ## 🛠️ Tech Stack & Architecture
 
 - **Framework**: [Flutter](https://flutter.dev) (Dart)
 - **State Management**: [Riverpod 2.x](https://riverpod.dev) (`flutter_riverpod`, `StateNotifier`)
-- **Navigation**: [GoRouter](https://pub.dev/packages/go_router)
+- **Navigation**: [GoRouter](https://pub.dev/packages/go_router) (`StatefulShellRoute` tabs for Game, Word Bank and Stats)
 - **Local Storage**: 
   - [Hive](https://pub.dev/packages/hive_flutter) (Preferences, streaks, game state)
   - [SQLite](https://pub.dev/packages/sqflite) (`sqflite` for curated vocabulary & word bank)
 - **Audio & TTS**: [flutter_tts](https://pub.dev/packages/flutter_tts)
-- **Typography & Styling**: Google Fonts (`Inter`)
+- **Typography & Styling**: Google Fonts (`Inter`); light/dark colors via the `AppPalette` theme extension
 
 ---
 
@@ -45,9 +54,9 @@
 lib/
 ├── core/
 │   ├── constants/       # App colors, typography, dimensions, game rules
-│   ├── router/          # GoRouter configuration
-│   ├── theme/           # Minimal Ink ThemeData
-│   └── utils/           # Haptics, share formatting, date helpers
+│   ├── router/          # GoRouter configuration & bottom-tab shell
+│   ├── theme/           # Light/dark ThemeData & AppPalette
+│   └── utils/           # Haptics, share formatting
 ├── data/
 │   ├── datasources/     # SQLite database & Hive stores
 │   ├── models/          # Word, BookmarkedWord, GuessResult models
@@ -55,8 +64,8 @@ lib/
 ├── features/
 │   ├── game/            # Grid, keyboard, tiles, post-game modal, game logic
 │   ├── word_bank/       # Saved vocabulary deck & search
-│   ├── stats/           # Streak & guess distribution charts
-│   ├── settings/        # Audio/haptic toggles & preferences
+│   ├── stats/           # Stats provider, streak & guess distribution chart
+│   ├── settings/        # Theme & haptic toggles, app version
 │   ├── onboarding/      # First-launch walkthrough
 │   └── how_to_play/     # Rules & tile color guides
 └── main.dart            # Application entry point & service bootstrap

@@ -6,6 +6,7 @@ import '../../features/stats/screens/stats_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/how_to_play/screens/how_to_play_screen.dart';
+import 'main_shell.dart';
 
 final appRouter = GoRouter(
   initialLocation: SettingsStore.hasSeenOnboarding ? '/game' : '/onboarding',
@@ -14,18 +15,31 @@ final appRouter = GoRouter(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),
     ),
-    GoRoute(
-      path: '/game',
-      builder: (context, state) => const GameScreen(),
+    // Tabs: switching keeps each screen alive instead of stacking new copies.
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) => MainShell(navigationShell: navigationShell),
+      branches: [
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/game',
+            builder: (context, state) => const GameScreen(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/word-bank',
+            builder: (context, state) => const WordBankScreen(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: '/stats',
+            builder: (context, state) => const StatsScreen(),
+          ),
+        ]),
+      ],
     ),
-    GoRoute(
-      path: '/word-bank',
-      builder: (context, state) => const WordBankScreen(),
-    ),
-    GoRoute(
-      path: '/stats',
-      builder: (context, state) => const StatsScreen(),
-    ),
+    // Pushed full-screen over the tabs.
     GoRoute(
       path: '/settings',
       builder: (context, state) => const SettingsScreen(),

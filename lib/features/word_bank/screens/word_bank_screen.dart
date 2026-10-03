@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../data/models/bookmarked_word.dart';
 import '../../game/providers/game_provider.dart';
 import '../../../core/theme/app_theme.dart';
-
-final bookmarkedWordsProvider = FutureProvider.autoDispose<List<BookmarkedWord>>((ref) async {
-  final repo = ref.watch(dictionaryRepoProvider);
-  return repo.getBookmarkedWords();
-});
+import '../providers/word_bank_provider.dart';
 
 class WordBankScreen extends ConsumerStatefulWidget {
   const WordBankScreen({super.key});
@@ -162,6 +157,8 @@ class _WordBankScreenState extends ConsumerState<WordBankScreen> {
                                       final repo = ref.read(dictionaryRepoProvider);
                                       await repo.removeBookmark(word.id);
                                       ref.invalidate(bookmarkedWordsProvider);
+                                      // Today's word may be the one removed; keep the SAVE button in sync.
+                                      await ref.read(gameProvider.notifier).syncBookmark();
                                     },
                                   ),
                                 ],

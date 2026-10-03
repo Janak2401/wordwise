@@ -58,6 +58,8 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
     _modalShown = true;
     showModalBottomSheet(
       context: context,
+      // Cover the tab bar instead of opening inside the Game tab.
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => const PostGameModal(),
@@ -249,30 +251,6 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: surfaceColor,
-        selectedItemColor: AppColors.correct,
-        unselectedItemColor: textSecondary,
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 1) context.push('/word-bank');
-          if (index == 2) context.push('/stats');
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_on_rounded),
-            label: 'Game',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_rounded),
-            label: 'Word Bank',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart_rounded),
-            label: 'Stats',
-          ),
-        ],
       ),
     );
   }

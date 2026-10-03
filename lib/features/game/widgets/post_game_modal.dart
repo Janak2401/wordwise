@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/share_utils.dart';
 import '../../stats/providers/stats_provider.dart';
+import '../../word_bank/providers/word_bank_provider.dart';
 import '../providers/game_provider.dart';
 import 'next_word_countdown.dart';
 import '../../../core/theme/app_theme.dart';
@@ -162,7 +163,10 @@ class PostGameModal extends ConsumerWidget {
                         backgroundColor: gameState.isBookmarked ? AppColors.correct.withValues(alpha: 0.15) : null,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: () => ref.read(gameProvider.notifier).toggleBookmark(),
+                      onPressed: () async {
+                        await ref.read(gameProvider.notifier).toggleBookmark();
+                        if (context.mounted) ref.invalidate(bookmarkedWordsProvider);
+                      },
                       icon: Icon(
                         gameState.isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
                         color: gameState.isBookmarked ? AppColors.correct : textPrimary,
