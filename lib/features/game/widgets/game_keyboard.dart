@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_dimensions.dart';
 import '../../../data/models/guess_result.dart';
 import 'keyboard_key.dart';
 
@@ -20,8 +21,17 @@ class GameKeyboard extends StatelessWidget {
   static const List<String> _row2 = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'];
   static const List<String> _row3 = ['Z', 'X', 'C', 'V', 'B', 'N', 'M'];
 
+  /// Key height for the current screen: shorter keys on short screens leave room for the grid.
+  static double keyHeightFor(double screenHeight) {
+    return (screenHeight * AppDimensions.keyHeightScreenRatio)
+        .clamp(AppDimensions.keyHeightMin, AppDimensions.keyHeightMax)
+        .floorToDouble();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final keyHeight = keyHeightFor(MediaQuery.sizeOf(context).height);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
       child: Column(
@@ -29,6 +39,7 @@ class GameKeyboard extends StatelessWidget {
           Row(
             children: _row1.map((letter) {
               return KeyboardKey(
+                height: keyHeight,
                 label: letter,
                 evaluation: keyEvaluations[letter] ?? LetterEvaluation.empty,
                 onTap: () => onLetterPressed(letter),
@@ -40,6 +51,7 @@ class GameKeyboard extends StatelessWidget {
               const Spacer(flex: 5),
               ..._row2.map((letter) {
                 return KeyboardKey(
+                  height: keyHeight,
                   label: letter,
                   evaluation: keyEvaluations[letter] ?? LetterEvaluation.empty,
                   onTap: () => onLetterPressed(letter),
@@ -51,6 +63,7 @@ class GameKeyboard extends StatelessWidget {
           Row(
             children: [
               KeyboardKey(
+                height: keyHeight,
                 label: 'ENTER',
                 flex: 1.5,
                 onTap: onEnterPressed,
@@ -64,12 +77,14 @@ class GameKeyboard extends StatelessWidget {
               ),
               ..._row3.map((letter) {
                 return KeyboardKey(
+                  height: keyHeight,
                   label: letter,
                   evaluation: keyEvaluations[letter] ?? LetterEvaluation.empty,
                   onTap: () => onLetterPressed(letter),
                 );
               }),
               KeyboardKey(
+                height: keyHeight,
                 label: 'BACKSPACE',
                 flex: 1.5,
                 onTap: onBackspacePressed,

@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_dimensions.dart';
 import '../../../data/models/guess_result.dart';
 import 'tile_row.dart';
 
@@ -20,26 +22,36 @@ class GameGrid extends StatelessWidget {
     this.revealRow,
   });
 
+  /// Largest square tile that lets [columns] x [rows] tiles fit in [space].
+  static double tileSizeFor(Size space, int columns, int rows) {
+    const gap = AppDimensions.tileGap;
+    final byWidth = (space.width - gap * (columns - 1)) / columns;
+    final byHeight = (space.height - gap * (rows - 1)) / rows;
+    // Whole pixels, so rounding can never push the grid a fraction past its space.
+    return min(byWidth, byHeight).clamp(0.0, AppDimensions.maxTileSize).floorToDouble();
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final tileSize = tileSizeFor(constraints.biggest, wordLength, maxGuesses);
+
         return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          spacing: AppDimensions.tileGap,
           children: List.generate(maxGuesses, (rowIndex) {
             final isSubmitted = rowIndex < submittedRows.length;
             final isCurrent = rowIndex == submittedRows.length;
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2.0),
-              child: TileRow(
-                length: wordLength,
-                letters: isSubmitted ? submittedRows[rowIndex] : null,
-                currentInput: isCurrent ? currentInput : null,
-                isCurrentRow: isCurrent,
-                isShaking: isCurrent && isShaking,
-                animateReveal: rowIndex == revealRow,
-              ),
+            return TileRow(
+              length: wordLength,
+              tileSize: tileSize,
+              letters: isSubmitted ? submittedRows[rowIndex] : null,
+              currentInput: isCurrent ? currentInput : null,
+              isCurrentRow: isCurrent,
+              isShaking: isCurrent && isShaking,
+              animateReveal: rowIndex == revealRow,
             );
           }),
         );

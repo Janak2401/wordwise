@@ -10,12 +10,16 @@ class LetterTile extends StatefulWidget {
   final int index;
   final bool animateFlip;
 
+  /// Tile edge length; the letter is drawn at half of it.
+  final double size;
+
   const LetterTile({
     super.key,
     required this.letter,
     required this.evaluation,
     this.index = 0,
     this.animateFlip = false,
+    required this.size,
   });
 
   @override
@@ -130,7 +134,10 @@ class _LetterTileState extends State<LetterTile> with SingleTickerProviderStateM
               alignment: Alignment.center,
               child: Text(
                 widget.letter,
-                style: AppTypography.tileLetter.copyWith(color: textColor),
+                style: AppTypography.tileLetter.copyWith(
+                  color: textColor,
+                  fontSize: widget.size * 0.5,
+                ),
               ),
             ),
           ),

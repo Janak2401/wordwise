@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../stats/providers/stats_provider.dart';
@@ -90,11 +91,6 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
       appBar: AppBar(
         backgroundColor: bgColor,
         elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'W O R D W I S E',
-          style: AppTypography.title.copyWith(color: textPrimary),
-        ),
         leading: IconButton(
           icon: Icon(Icons.help_outline_rounded, color: textSecondary),
           onPressed: () => context.push('/how-to-play'),
@@ -173,81 +169,112 @@ class _GameScreenState extends ConsumerState<GameScreen> with WidgetsBindingObse
         child: Column(
           children: [
             Divider(color: borderColor, height: 1),
-
-            // Definition Clue Hint
-            DefinitionHint(
-              definition: gameState.targetWord?.definition,
-              partOfSpeech: gameState.targetWord?.partOfSpeech,
-            ),
-
-            // Toast/Alert Message on invalid word
-            if (gameState.message != null)
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: textPrimary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  gameState.message!,
-                  style: TextStyle(
-                    color: bgColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-
-            // Dynamic Tile Grid
             Expanded(
+              // Centered column of limited width so tablets don't stretch the grid and keyboard.
               child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: GameGrid(
-                    wordLength: gameState.wordLength,
-                    maxGuesses: gameState.maxGuesses,
-                    submittedRows: gameState.submittedRows,
-                    currentInput: gameState.currentInput,
-                    isShaking: gameState.isShaking,
-                    revealRow: gameState.revealRow,
-                  ),
-                ),
-              ),
-            ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: AppDimensions.contentMaxWidth),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      children: [
+                        // Definition Clue Hint
+                        DefinitionHint(
+                          definition: gameState.targetWord?.definition,
+                          partOfSpeech: gameState.targetWord?.partOfSpeech,
+                        ),
 
-            // Guess counter while playing; results button once today's word is done
-            if (gameState.status == GameStatus.playing)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6.0),
-                child: Text(
-                  'Guess $currentGuessCount of ${gameState.maxGuesses}',
-                  style: AppTypography.bodySecondary.copyWith(fontSize: 12, color: textSecondary),
-                ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: TextButton.icon(
-                  onPressed: _showResults,
-                  icon: const Icon(Icons.insights_rounded, size: 18, color: AppColors.correct),
-                  label: const Text(
-                    'SEE RESULTS',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      color: AppColors.correct,
+                        // Tile grid sized to the space left over, with messages floating on top
+                        Expanded(
+                          child: Stack(
+                            alignment: Alignment.topCenter,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                                child: Center(
+                                  child: MediaQuery.withClampedTextScaling(
+                                    maxScaleFactor: AppDimensions.maxGameTextScale,
+                                    child: GameGrid(
+                                      wordLength: gameState.wordLength,
+                                      maxGuesses: gameState.maxGuesses,
+                                      submittedRows: gameState.submittedRows,
+                                      currentInput: gameState.currentInput,
+                                      isShaking: gameState.isShaking,
+                                      revealRow: gameState.revealRow,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                child: IgnorePointer(
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 150),
+                                    child: gameState.message == null
+                                        ? const SizedBox.shrink()
+                                        : Container(
+                                            key: ValueKey(gameState.message),
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: textPrimary,
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              gameState.message!,
+                                              style: TextStyle(
+                                                color: bgColor,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Guess counter while playing; results button once today's word is done.
+                        // Fixed height so the grid keeps its size when the game ends.
+                        SizedBox(
+                          height: AppDimensions.statusStripHeight,
+                          child: Center(
+                            child: gameState.status == GameStatus.playing
+                                ? Text(
+                                    'Guess $currentGuessCount of ${gameState.maxGuesses}',
+                                    style: AppTypography.bodySecondary.copyWith(fontSize: 12, color: textSecondary),
+                                  )
+                                : TextButton.icon(
+                                    onPressed: _showResults,
+                                    icon: const Icon(Icons.insights_rounded, size: 18, color: AppColors.correct),
+                                    label: const Text(
+                                      'SEE RESULTS',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.2,
+                                        color: AppColors.correct,
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        ),
+
+                        // Virtual Keyboard
+                        MediaQuery.withClampedTextScaling(
+                          maxScaleFactor: AppDimensions.maxGameTextScale,
+                          child: GameKeyboard(
+                            onLetterPressed: (l) => ref.read(gameProvider.notifier).addLetter(l),
+                            onEnterPressed: () => ref.read(gameProvider.notifier).submitGuess(),
+                            onBackspacePressed: () => ref.read(gameProvider.notifier).removeLetter(),
+                            keyEvaluations: gameState.keyEvaluations,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-
-            // Virtual Keyboard
-            GameKeyboard(
-              onLetterPressed: (l) => ref.read(gameProvider.notifier).addLetter(l),
-              onEnterPressed: () => ref.read(gameProvider.notifier).submitGuess(),
-              onBackspacePressed: () => ref.read(gameProvider.notifier).removeLetter(),
-              keyEvaluations: gameState.keyEvaluations,
             ),
           ],
         ),

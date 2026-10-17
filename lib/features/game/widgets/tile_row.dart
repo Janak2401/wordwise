@@ -1,10 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_dimensions.dart';
 import '../../../data/models/guess_result.dart';
 import 'letter_tile.dart';
 
 class TileRow extends StatefulWidget {
   final int length;
+  final double tileSize;
   final List<GuessLetter>? letters;
   final String? currentInput;
   final bool isCurrentRow;
@@ -14,6 +16,7 @@ class TileRow extends StatefulWidget {
   const TileRow({
     super.key,
     required this.length,
+    required this.tileSize,
     this.letters,
     this.currentInput,
     this.isCurrentRow = false,
@@ -66,7 +69,8 @@ class _TileRowState extends State<TileRow> with SingleTickerProviderStateMixin {
         return Transform.translate(
           offset: Offset(offset, 0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            spacing: AppDimensions.tileGap,
             children: List.generate(widget.length, (index) {
               String char = '';
               LetterEvaluation eval = LetterEvaluation.empty;
@@ -83,18 +87,14 @@ class _TileRowState extends State<TileRow> with SingleTickerProviderStateMixin {
                 }
               }
 
-              return Expanded(
-                child: AspectRatio(
-                  aspectRatio: 1.0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(3.0),
-                    child: LetterTile(
-                      letter: char,
-                      evaluation: eval,
-                      index: index,
-                      animateFlip: animate,
-                    ),
-                  ),
+              return SizedBox.square(
+                dimension: widget.tileSize,
+                child: LetterTile(
+                  letter: char,
+                  evaluation: eval,
+                  index: index,
+                  animateFlip: animate,
+                  size: widget.tileSize,
                 ),
               );
             }),

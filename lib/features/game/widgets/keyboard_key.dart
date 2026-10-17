@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../data/models/guess_result.dart';
 
@@ -8,6 +9,7 @@ class KeyboardKey extends StatelessWidget {
   final VoidCallback onTap;
   final LetterEvaluation evaluation;
   final double flex;
+  final double height;
   final Widget? customChild;
 
   const KeyboardKey({
@@ -16,6 +18,7 @@ class KeyboardKey extends StatelessWidget {
     required this.onTap,
     this.evaluation = LetterEvaluation.empty,
     this.flex = 1.0,
+    required this.height,
     this.customChild,
   });
 
@@ -53,7 +56,10 @@ class KeyboardKey extends StatelessWidget {
     return Expanded(
       flex: (flex * 10).toInt(),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2.5, vertical: 3.5),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.keyGapH / 2,
+          vertical: AppDimensions.keyGapV / 2,
+        ),
         child: Material(
           color: bgColor,
           borderRadius: BorderRadius.circular(4.0),
@@ -61,26 +67,31 @@ class KeyboardKey extends StatelessWidget {
             onTap: onTap,
             borderRadius: BorderRadius.circular(4.0),
             child: Container(
-              height: 52,
+              height: height,
               alignment: Alignment.center,
-              child: customChild != null
-                  ? IconTheme(
-                      data: IconThemeData(color: textColor),
-                      child: DefaultTextStyle(
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              // Narrow keys shrink their label instead of overflowing.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: customChild != null
+                    ? IconTheme(
+                        data: IconThemeData(color: textColor),
+                        child: DefaultTextStyle(
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                          child: customChild!,
+                        ),
+                      )
+                    : Text(
+                        label,
+                        style: AppTypography.keyLabel.copyWith(
                           color: textColor,
                         ),
-                        child: customChild!,
                       ),
-                    )
-                  : Text(
-                      label,
-                      style: AppTypography.keyLabel.copyWith(
-                        color: textColor,
-                      ),
-                    ),
+              ),
             ),
           ),
         ),
